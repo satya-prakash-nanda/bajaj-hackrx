@@ -51,7 +51,7 @@ def _safe_pdf_write(pdf: FPDF, text: str, cell_h=8):
         pdf.multi_cell(0, cell_h, txt=text.encode('latin-1', 'replace').decode('latin-1'))
 
 # ------------------------------
-# Linux-Compatible Converters
+# Linux + Windows-Compatible Converters
 # ------------------------------
 def docx_to_pdf(docx_path: str) -> str:
     """
@@ -68,8 +68,9 @@ def docx_to_pdf(docx_path: str) -> str:
         pdf = FPDF()
         pdf.add_page()
         
-        # Find bundled font
-        font_dir = os.path.join(os.path.dirname(__file__), "fonts")
+        # Fonts folder is inside "app"
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        font_dir = os.path.join(base_dir, "app", "fonts")
         font_path = os.path.join(font_dir, "DejaVuSans.ttf")
         
         if os.path.exists(font_path):
@@ -78,7 +79,7 @@ def docx_to_pdf(docx_path: str) -> str:
             logger.info(f"✅ Using Unicode font: {font_path}")
         else:
             raise FileNotFoundError(
-                f"Missing font {font_path}. Download DejaVuSans.ttf and place it in backend/app/fonts/"
+                f"Missing font {font_path}. Download DejaVuSans.ttf and place it in app/fonts/"
             )
         
         # Add paragraphs
