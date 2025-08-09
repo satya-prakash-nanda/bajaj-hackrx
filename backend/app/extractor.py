@@ -54,9 +54,6 @@ def _safe_pdf_write(pdf: FPDF, text: str, cell_h=8):
 # Linux + Windows-Compatible Converters
 # ------------------------------
 def docx_to_pdf(docx_path: str) -> str:
-    """
-    Convert DOCX to PDF with full Unicode support (Windows/Linux/Mac).
-    """
     logger.info(f"📝 Converting DOCX to PDF: {docx_path}")
     try:
         pdf_path = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf").name
@@ -68,34 +65,38 @@ def docx_to_pdf(docx_path: str) -> str:
         pdf = FPDF()
         pdf.add_page()
         
-        # Fonts folder is inside "app"
-        base_dir = os.path.dirname(os.path.abspath(__file__))
-        font_dir = os.path.join(base_dir, "app", "fonts")
+        # Fonts folder relative to project root
+        base_dir = os.path.dirname(os.path.abspath(__file__))  # /app/app
+        font_dir = os.path.join(base_dir, "fonts")  # /app/app/fonts
         font_path = os.path.join(font_dir, "DejaVuSans.ttf")
+
+        # Auto-create fonts folder & download font if missing
+        if not os.path.exists(font_path):
+            os.makedirs(font_dir, exist_ok=True)
+            logger.warning(f"⚠️ Font missing. Downloading DejaVuSans.ttf to {font_path}...")
+            url = "https://github.com/dejavu-fonts/dejavu-fonts/raw/master/ttf/DejaVuSans.ttf"
+            r = requests.get(url, timeout=20)
+            r.raise_for_status()
+            with open(font_path, "wb") as f:
+                f.write(r.content)
+            logger.info("✅ Font downloaded successfully.")
+
+        pdf.add_font("DejaVu", "", font_path, uni=True)
+        pdf.set_font("DejaVu", size=12)
         
-        if os.path.exists(font_path):
-            pdf.add_font("DejaVu", "", font_path, uni=True)  # Enable Unicode
-            pdf.set_font("DejaVu", size=12)
-            logger.info(f"✅ Using Unicode font: {font_path}")
-        else:
-            raise FileNotFoundError(
-                f"Missing font {font_path}. Download DejaVuSans.ttf and place it in app/fonts/"
-            )
-        
-        # Add paragraphs
         for para in doc.paragraphs:
             text = para.text.strip()
             if text:
-                pdf.multi_cell(0, 8, text)  # No encoding errors
+                pdf.multi_cell(0, 8, text)
         
-        # Save PDF
         pdf.output(pdf_path)
         logger.info(f"✅ Saved PDF: {pdf_path}")
         return pdf_path
-    
+
     except Exception as e:
         logger.error(f"❌ Failed to convert DOCX to PDF: {e}")
         raise
+
 
 
 def image_to_pdf(image_path: str) -> str:
